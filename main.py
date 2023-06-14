@@ -33,6 +33,13 @@ score_time = None
 
 def ball_restart():
     ball.center = (screen_width/2, screen_height/2)
+    current_time = pygame.time.get_ticks()
+
+    if current_time - score_time < 2100:
+        ball_speed.x, ball_speed.y = 0
+    else:
+        ball_speed.x, ball_speed.y = 7 * \
+            random.choice(-1, 1), 7 * random.choice(-1, 1)
     ball_speed.y *= random.choice((1, -1))
     ball_speed.x *= random.choice((1, -1))
 
