@@ -32,14 +32,25 @@ score_time = None
 
 
 def ball_restart():
+    global score_time
     ball.center = (screen_width/2, screen_height/2)
     current_time = pygame.time.get_ticks()
 
+    if current_time - score_time < 700:
+        three = game_font.render("3", False, light_grey)
+        screen.blit(three, (screen_width/2 - 10, screen_height/2 + 20))
+    if 700 < current_time - score_time < 1400:
+        two = game_font.render("2", False, light_grey)
+        screen.blit(two, (screen_width/2 - 10, screen_height/2 + 20))
+    if 1400 < current_time - score_time < 2100:
+        two = game_font.render("2", False, light_grey)
+        screen.blit(two, (screen_width/2 - 10, screen_height/2 + 30))
     if current_time - score_time < 2100:
-        ball_speed.x, ball_speed.y = 0
+        ball_speed.x, ball_speed.y = 0, 0
     else:
-        ball_speed.x, ball_speed.y = 7 * \
-            random.choice(-1, 1), 7 * random.choice(-1, 1)
+        ball_speed.x = 7 * random.choice((-1, 1))
+        ball_speed.y = 7 * random.choice((-1, 1))
+        score_time = None
     ball_speed.y *= random.choice((1, -1))
     ball_speed.x *= random.choice((1, -1))
 
