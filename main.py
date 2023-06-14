@@ -43,8 +43,8 @@ def ball_restart():
         two = game_font.render("2", False, light_grey)
         screen.blit(two, (screen_width/2 - 10, screen_height/2 + 20))
     if 1400 < current_time - score_time < 2100:
-        two = game_font.render("2", False, light_grey)
-        screen.blit(two, (screen_width/2 - 10, screen_height/2 + 30))
+        one = game_font.render("1", False, light_grey)
+        screen.blit(one, (screen_width/2 - 10, screen_height/2 + 30))
     if current_time - score_time < 2100:
         ball_speed.x, ball_speed.y = 0, 0
     else:
@@ -112,8 +112,6 @@ while running:
     # Actions and Logic
     player_text = game_font.render(f"{player_score}", False, light_grey)
     opponent_text = game_font.render(f"{opponent_score}", False, light_grey)
-    if score_time:
-        ball_restart()
     ball_move()
     player_move()
     opponent_move()
@@ -131,6 +129,8 @@ while running:
     player_text = game_font.render(f"{player_score}", False, light_grey)
     screen.blit(player_text, (495, 470))
     screen.blit(opponent_text, (450, 470))
+    if score_time:
+        ball_restart()
     # Screen Update
     pygame.display.update()
     # limits FPS to 60
