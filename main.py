@@ -65,8 +65,23 @@ def ball_move():
     if ball.right >= screen_width:
         player_score += 1
         score_time = pygame.time.get_ticks()
-    if ball.colliderect(player) or ball.colliderect(opponent):
-        ball_speed.x *= -1
+
+
+    if ball.colliderect(player) and ball_speed.x <0 :
+        if abs(ball.left - player.right) < 10:
+            ball_speed.x *= -1	
+        elif abs(ball.bottom - player.top) and ball_speed.y > 0:
+            ball_speed.y *= -1	
+        elif abs(ball.top - player.bottom) and ball_speed.y < 0:
+            ball_speed.y *= -1	
+
+    if ball.colliderect(opponent) and ball_speed.x > 0:
+        if abs(ball.right - opponent.left) < 10:
+            ball_speed.x *= -1
+        elif abs(ball.bottom - opponent.top) and ball_speed.y > 0:
+            ball_speed.y *= -1	
+        elif abs(ball.top - opponent.bottom) and ball_speed.y < 0:
+            ball_speed.y *= -1	
     ball.x += ball_speed.x
     ball.y += ball_speed.y
 
