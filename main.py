@@ -24,12 +24,13 @@ player_speed = 0
 opponent_speed = 7
 player_score = 0
 opponent_score = 0
-# Timer
+# Timer and Sound
 
 score_time = None
+pong_sound = pygame.mixer.Sound("pong.ogg")
+score_sound = pygame.mixer.Sound("score.ogg")
 
 # Functions
-
 
 def ball_restart():
     global score_time
@@ -58,16 +59,20 @@ def ball_restart():
 def ball_move():
     global opponent_score, player_score, score_time
     if ball.top <= 0 or ball.bottom >= screen_height:
+        pygame.mixer.Sound.play(pong_sound)
         ball_speed.y *= -1
     if ball.left <= 0:
+        pygame.mixer.Sound.play(score_sound)
         opponent_score += 1
         score_time = pygame.time.get_ticks()
     if ball.right >= screen_width:
+        pygame.mixer.Sound.play(score_sound)
         player_score += 1
         score_time = pygame.time.get_ticks()
 
 
     if ball.colliderect(player) and ball_speed.x <0 :
+        pygame.mixer.Sound.play(pong_sound)
         if abs(ball.left - player.right) < 10:
             ball_speed.x *= -1	
         elif abs(ball.bottom - player.top) and ball_speed.y > 0:
@@ -76,6 +81,7 @@ def ball_move():
             ball_speed.y *= -1	
 
     if ball.colliderect(opponent) and ball_speed.x > 0:
+        pygame.mixer.Sound.play(pong_sound)
         if abs(ball.right - opponent.left) < 10:
             ball_speed.x *= -1
         elif abs(ball.bottom - opponent.top) and ball_speed.y > 0:
