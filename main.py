@@ -4,12 +4,12 @@ class Block(pygame.sprite.Sprite):
     def __init__(self, path, x, y):
         super().__init__()
         self.image = pygame.image.load(path)
-        self.image.fill(color)
         self.rect = self.image.get_rect( center = (x,y))
 
 class Ball(Block):
     def __init__(self, path, x, y, speed, paddles):
         super().__init__(path, x, y)
+        self.speed = pygame.Vector2()
         self.speed.x = speed.x * random.choice((-1,1))
         self.speed.y = speed.y * random.choice((-1,1))
         self.paddles = paddles
@@ -21,21 +21,23 @@ class Ball(Block):
             self.rect.y += self.speed.y
             self.collisions()
         else:
-            self.restart()
+            self.counter()
     def collisions(self):
-        if self.rect.top <= 0 or self.rect.bottom >= screen.height:
+        if self.rect.top <= 0 or self.rect.bottom >= screen_height:
             pygame.mixer.Sound.play(pong_sound)
             self.speed.y *= -1
         if pygame.sprite.spritecollide(self, self.paddles, False):
             pygame.mixer.Sound.play(pong_sound)
             collision_paddle = pygame.sprite.spritecollide(self, self.paddles, False)[0].rect
-            if abs(self.rect.left - collision_paddle.right) < 10 and self.speed.y > 0:
+            if abs(self.rect.right- collision_paddle.left) < 10 and self.speed.x > 0:
                 self.speed.x *= -1	
-            elif abs(self.rect.right - collision_paddle.left) < 10 and self.speed.y < 0:
+            elif abs(self.rect.left - collision_paddle.right) < 10 and self.speed.x < 0:
                 self.speed.x *= -1	
             elif abs(self.rect.bottom - collision_paddle.top) and self.speed.y > 0:
+                self.rect.top = collision_paddle.bottom
                 self.speed.y *= -1	
             elif abs(self.rect.top - collision_paddle.bottom) and self.speed.y < 0:
+                self.rect.bottom = collision_paddle.top
                 self.speed.y *= -1	
     def restart(self):
         self.active = False
@@ -43,7 +45,21 @@ class Ball(Block):
         self.speed.y *= random.choice((-1,1))
         self.score_time = pygame.time.get_ticks()
         self.rect.center = (screen_width/2, screen_height/2)
-            
+    def counter(self):
+        current_time = pygame.time.get_ticks()
+        count = 3
+        if current_time - self.score_time < 700:
+            three = game_font.render("3", False, light_grey)
+            screen.blit(three, (screen_width/2 - 10, screen_height/2 + 20))
+        if 700 < current_time - self.score_time < 1400:
+            two = game_font.render("2", False, light_grey)
+            screen.blit(two, (screen_width/2 - 10, screen_height/2 + 20))
+        if 1400 < current_time - self.score_time < 2100:
+            one = game_font.render("1", False, light_grey)
+            screen.blit(one, (screen_width/2 - 10, screen_height/2 + 30))
+        if current_time - self.score_time > 2100:
+            self.active = True
+    
 
 class Player(Block):
     def __init__(self, path,x,y, speed):
@@ -55,13 +71,53 @@ class Player(Block):
             self.rect.top = 0
         if self.rect.bottom > screen_height:
             self.rect.bottom = screen_height
-    def update(self):
+    def update(self, ball_group):
         self.rect.y += self.movement
         self.screen_constraint()
 class Opponent(Block):
-    pass
+    def __init__(self,path, x,y,speed):
+        super().__init__(path,x,y)
+        self.speed = speed
+    def update(self, ball_group):
+        if(self.rect.top < ball_group.sprite.rect.y):
+            self.rect.y += self.speed
+        if(self.rect.bottom > ball_group.sprite.rect.y):
+            self.rect.y -= self.speed
+        self.constrain()
+    def constrain(self):
+        if self.rect.top <= 0: self.rect.top = 0
+        if self.rect.bottom >= screen_height: self.rect.bottom = screen_height
 class GameManager:
-    pass
+    def __init__(self, ball_group, paddle_group):
+        self.player_score = 0
+        self.opponent_score = 0
+        self.ball_group = ball_group
+        self.paddle_group = paddle_group
+    def run_game(self):
+		# Drawing the game objects
+        self.paddle_group.draw(screen)
+        self.ball_group.draw(screen)
+
+		# Updating the game objects
+        self.paddle_group.update(self.ball_group)
+        self.ball_group.update() 
+        self.reset_ball()
+        self.draw_score()
+    def reset_ball(self):
+        if self.ball_group.sprite.rect.right >= screen_width:
+            self.opponent_score += 1
+            self.ball_group.sprite.restart()
+        if self.ball_group.sprite.rect.left <= 0:
+            self.player_score += 1
+            self.ball_group.sprite.restart()
+    def draw_score(self):
+        player_score = game_font.render(str(self.player_score),True,"red")
+        opponent_score = game_font.render(str(self.opponent_score),True,"red")
+
+        player_score_rect = player_score.get_rect(midleft = (screen_width / 2 + 40,screen_height/2))
+        opponent_score_rect = opponent_score.get_rect(midright = (screen_width / 2 - 40,screen_height/2))
+        screen.blit(player_score,player_score_rect)
+        screen.blit(opponent_score,opponent_score_rect)
 
 # Initializers
 pygame.mixer.pre_init(44100, -16, 2,512)
@@ -75,112 +131,27 @@ game_font = pygame.font.Font("freesansbold.ttf", 32)
 running = True
 
 print(screen_height)
-# Variables
-ball = pygame.Rect(screen_width/2 - 15, screen_height/2 - 15, 30, 30)
+# Game Variables
 player = Player("Paddle.png", 30, screen_height/2 - 70,5)
-opponent = pygame.Rect(screen_width-30, screen_height/2 - 70, 10, 140)
+opponent = Opponent("Paddle.png", screen_width-30, screen_height/2 - 70, 5)
 paddle_group = pygame.sprite.Group()
 paddle_group.add(player)
-
+paddle_group.add(opponent)
+ball = Ball('Ball (1).png',screen_width/2,screen_height/2,pygame.Vector2(4,4),paddle_group)
+ball2 = Ball('Ball (1).png',screen_width/2,random.choice((100,200)),pygame.Vector2(4,4),paddle_group)
+ball_sprite = pygame.sprite.GroupSingle()
+ball_sprite.add(ball)
+game_manager = GameManager(ball_sprite,paddle_group)
+middle_strip = pygame.Rect(screen_width/2 - 2,0,4,screen_height)
+# Variables
 background = pygame.Color('#2F373F')
 light_grey = (200, 200, 200)
-ball_speed = pygame.Vector2(7, 7)
-player_speed = 0
-opponent_speed = 7
-player_score = 0
-opponent_score = 0
-# Timer and Sound
 
-score_time = None
+#Sound
+
 pong_sound = pygame.mixer.Sound("pong.ogg")
 score_sound = pygame.mixer.Sound("score.ogg")
 
-# Functions
-
-def ball_restart():
-    global score_time
-    ball.center = (screen_width/2, screen_height/2)
-    current_time = pygame.time.get_ticks()
-
-    if current_time - score_time < 700:
-        three = game_font.render("3", False, light_grey)
-        screen.blit(three, (screen_width/2 - 10, screen_height/2 + 20))
-    if 700 < current_time - score_time < 1400:
-        two = game_font.render("2", False, light_grey)
-        screen.blit(two, (screen_width/2 - 10, screen_height/2 + 20))
-    if 1400 < current_time - score_time < 2100:
-        one = game_font.render("1", False, light_grey)
-        screen.blit(one, (screen_width/2 - 10, screen_height/2 + 30))
-    
-    if current_time - score_time == 700:
-        pygame.mixer.Sound.play(score_sound)
-    if 1380 < current_time - score_time < 1400:
-        pygame.mixer.Sound.play(score_sound)
-    if 2080 < current_time - score_time < 2100:
-        pygame.mixer.Sound.play(score_sound)
-    if current_time - score_time < 2100:
-        ball_speed.x, ball_speed.y = 0, 0
-    else:
-        ball_speed.x = 7 * random.choice((-1, 1))
-        ball_speed.y = 7 * random.choice((-1, 1))
-        score_time = None
-    ball_speed.y *= random.choice((1, -1))
-    ball_speed.x *= random.choice((1, -1))
-
-
-def ball_move():
-    global opponent_score, player_score, score_time
-    if ball.top <= 0 or ball.bottom >= screen_height:
-        pygame.mixer.Sound.play(pong_sound)
-        ball_speed.y *= -1
-    if ball.left <= 0:
-        pygame.mixer.Sound.play(score_sound)
-        opponent_score += 1
-        score_time = pygame.time.get_ticks()
-    if ball.right >= screen_width:
-        pygame.mixer.Sound.play(score_sound)
-        player_score += 1
-        score_time = pygame.time.get_ticks()
-
-
-    if ball.colliderect(player) and ball_speed.x <0 :
-        pygame.mixer.Sound.play(pong_sound)
-        if abs(ball.left - player.right) < 10:
-            ball_speed.x *= -1	
-        elif abs(ball.bottom - player.top) and ball_speed.y > 0:
-            ball_speed.y *= -1	
-        elif abs(ball.top - player.bottom) and ball_speed.y < 0:
-            ball_speed.y *= -1	
-
-    if ball.colliderect(opponent) and ball_speed.x > 0:
-        pygame.mixer.Sound.play(pong_sound)
-        if abs(ball.right - opponent.left) < 10:
-            ball_speed.x *= -1
-        elif abs(ball.bottom - opponent.top) and ball_speed.y > 0:
-            ball_speed.y *= -1	
-        elif abs(ball.top - opponent.bottom) and ball_speed.y < 0:
-            ball_speed.y *= -1	
-    ball.x += ball_speed.x
-    ball.y += ball_speed.y
-
-
-def player_move():
-    player.y += player_speed
-    if player.top <= 0:
-        player.top = 0
-    if player.bottom >= screen_height:
-        player.bottom = screen_height
-
-
-def opponent_move():
-    if opponent.top < ball.y:
-        opponent.top += opponent_speed
-    if opponent.bottom > ball.y:
-        opponent.bottom -= opponent_speed
-    if opponent.bottom >= screen_height:
-        opponent.bottom = screen_height
-    if opponent.top <= 0:
-        opponent.top = 0
 
 
 # Run game
@@ -193,40 +164,22 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_DOWN:
-                player_speed += 7
+                player.movement+=player.speed 
             if event.key == pygame.K_UP:
-                player_speed -= 7
+                player.movement-=player.speed 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_DOWN:
-                player_speed -= 7
+                 player.movement-=player.speed 
             if event.key == pygame.K_UP:
-                player_speed += 7
-
-    # Actions and Logic
-    player_text = game_font.render(f"{player_score}", False, light_grey)
-    opponent_text = game_font.render(f"{opponent_score}", False, light_grey)
-    ball_move()
-    player_move()
-    opponent_move()
+                 player.movement+=player.speed 
 
     # fill the screen with a color to wipe away anything from last frame
 
     screen.fill(background)
-
-    # RENDER YOUR GAME HERE
-    pygame.draw.rect(screen, light_grey, player)
-    pygame.draw.rect(screen, light_grey, opponent)
-    pygame.draw.ellipse(screen, light_grey, ball)
-    pygame.draw.aaline(screen, light_grey, (screen_width/2,
-                       0), (screen_width/2, screen_height))
-    player_text = game_font.render(f"{player_score}", False, light_grey)
-    screen.blit(player_text, (495, 470))
-    screen.blit(opponent_text, (450, 470))
-    screen.blit(block.image, (100,100))
-    if score_time:
-        ball_restart()
+    pygame.draw.rect(screen, "orange", middle_strip)
+    game_manager.run_game()
     # Screen Update
-    pygame.display.update()
+    pygame.display.flip()
     # limits FPS to 60
     clock.tick(60)
 
