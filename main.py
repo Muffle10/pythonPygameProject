@@ -1,7 +1,34 @@
 import pygame
 import random
-# Initializers
+class Block(pygame.sprite.Sprite):
+    def __init__(self, path, x, y):
+        super().__init__()
+        self.image = pygame.image.load(path)
+        self.image.fill(color)
+        self.rect = self.image.get_rect( center = (x,y))
 
+class Ball(Block):
+    pass
+class Player(Block):
+    def __init__(self, path,x,y, speed):
+        super().__init__(path,x,y)
+        self.speed = speed
+        self.movement = 0
+    def screen_constraint(self):
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > screen_height:
+            self.rect.bottom = screen_height
+    def update(self):
+        self.rect.y += self.movement
+        self.screen_constraint()
+class Opponent(Block):
+    pass
+class GameManager:
+    pass
+
+# Initializers
+pygame.mixer.pre_init(44100, -16, 2,512)
 pygame.init()
 screen_width = 960
 screen_height = 720
@@ -13,11 +40,12 @@ running = True
 
 print(screen_height)
 # Variables
-
 ball = pygame.Rect(screen_width/2 - 15, screen_height/2 - 15, 30, 30)
-player = pygame.Rect(20, screen_height/2 - 70, 10, 140)
+player = Player("Paddle.png", 30, screen_height/2 - 70,5)
 opponent = pygame.Rect(screen_width-30, screen_height/2 - 70, 10, 140)
-background = pygame.Color('grey12')
+paddle_group = pygame.sprite.Group()
+paddle_group.add(player)
+background = pygame.Color('#2F373F')
 light_grey = (200, 200, 200)
 ball_speed = pygame.Vector2(7, 7)
 player_speed = 0
@@ -46,6 +74,13 @@ def ball_restart():
     if 1400 < current_time - score_time < 2100:
         one = game_font.render("1", False, light_grey)
         screen.blit(one, (screen_width/2 - 10, screen_height/2 + 30))
+    
+    if current_time - score_time == 700:
+        pygame.mixer.Sound.play(score_sound)
+    if 1380 < current_time - score_time < 1400:
+        pygame.mixer.Sound.play(score_sound)
+    if 2080 < current_time - score_time < 2100:
+        pygame.mixer.Sound.play(score_sound)
     if current_time - score_time < 2100:
         ball_speed.x, ball_speed.y = 0, 0
     else:
@@ -150,6 +185,7 @@ while running:
     player_text = game_font.render(f"{player_score}", False, light_grey)
     screen.blit(player_text, (495, 470))
     screen.blit(opponent_text, (450, 470))
+    screen.blit(block.image, (100,100))
     if score_time:
         ball_restart()
     # Screen Update
