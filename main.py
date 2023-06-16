@@ -8,7 +8,43 @@ class Block(pygame.sprite.Sprite):
         self.rect = self.image.get_rect( center = (x,y))
 
 class Ball(Block):
-    pass
+    def __init__(self, path, x, y, speed, paddles):
+        super().__init__(path, x, y)
+        self.speed.x = speed.x * random.choice((-1,1))
+        self.speed.y = speed.y * random.choice((-1,1))
+        self.paddles = paddles
+        self.active=False
+        self.score_time = 0
+    def update(self):
+        if self.active:
+            self.rect.x += self.speed.x
+            self.rect.y += self.speed.y
+            self.collisions()
+        else:
+            self.restart()
+    def collisions(self):
+        if self.rect.top <= 0 or self.rect.bottom >= screen.height:
+            pygame.mixer.Sound.play(pong_sound)
+            self.speed.y *= -1
+        if pygame.sprite.spritecollide(self, self.paddles, False):
+            pygame.mixer.Sound.play(pong_sound)
+            collision_paddle = pygame.sprite.spritecollide(self, self.paddles, False)[0].rect
+            if abs(self.rect.left - collision_paddle.right) < 10 and self.speed.y > 0:
+                self.speed.x *= -1	
+            elif abs(self.rect.right - collision_paddle.left) < 10 and self.speed.y < 0:
+                self.speed.x *= -1	
+            elif abs(self.rect.bottom - collision_paddle.top) and self.speed.y > 0:
+                self.speed.y *= -1	
+            elif abs(self.rect.top - collision_paddle.bottom) and self.speed.y < 0:
+                self.speed.y *= -1	
+    def restart(self):
+        self.active = False
+        self.speed.x *= random.choice((-1,1))
+        self.speed.y *= random.choice((-1,1))
+        self.score_time = pygame.time.get_ticks()
+        self.rect.center = (screen_width/2, screen_height/2)
+            
+
 class Player(Block):
     def __init__(self, path,x,y, speed):
         super().__init__(path,x,y)
@@ -45,6 +81,7 @@ player = Player("Paddle.png", 30, screen_height/2 - 70,5)
 opponent = pygame.Rect(screen_width-30, screen_height/2 - 70, 10, 140)
 paddle_group = pygame.sprite.Group()
 paddle_group.add(player)
+
 background = pygame.Color('#2F373F')
 light_grey = (200, 200, 200)
 ball_speed = pygame.Vector2(7, 7)
